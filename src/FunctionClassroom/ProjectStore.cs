@@ -78,9 +78,8 @@ namespace FunctionClassroom
                 serializer.Serialize(stream, workspace);
             }
 
-            if (File.Exists(path))
-                File.Delete(path);
-            File.Move(temporary, path);
+            File.Copy(temporary, path, true);
+            File.Delete(temporary);
         }
 
         public static SavedWorkspace Load(string path)

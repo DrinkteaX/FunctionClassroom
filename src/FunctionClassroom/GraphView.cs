@@ -14,10 +14,7 @@ namespace FunctionClassroom
         private readonly List<FunctionPlotItem> _functions = new List<FunctionPlotItem>();
         private readonly Dictionary<int, Point> _touches = new Dictionary<int, Point>();
         private readonly List<PlotPoint> _intersections = new List<PlotPoint>();
-        private double _xMin = -10.0;
-        private double _xMax = 10.0;
-        private double _yMin = -7.0;
-        private double _yMax = 7.0;
+        private readonly GraphViewport _viewport = new GraphViewport(-10.0, 10.0, -7.0, 7.0);
         private PlotPoint? _tracePoint;
         private int _traceFunctionId = -1;
         private int _selectedIntersection = -1;
@@ -49,19 +46,21 @@ namespace FunctionClassroom
 
         public event EventHandler ViewportChanged;
 
-        public double XMin { get { return _xMin; } }
-        public double XMax { get { return _xMax; } }
-        public double YMin { get { return _yMin; } }
-        public double YMax { get { return _yMax; } }
+        public double XMin { get { return _viewport.XMin; } }
+        public double XMax { get { return _viewport.XMax; } }
+        public double YMin { get { return _viewport.YMin; } }
+        public double YMax { get { return _viewport.YMax; } }
 
         public void SetViewport(double xMin, double xMax, double yMin, double yMax)
         {
-            if (!(xMin < xMax) || !(yMin < yMax))
+            try
+            {
+                _viewport.Set(xMin, xMax, yMin, yMax);
+            }
+            catch
+            {
                 return;
-            _xMin = xMin;
-            _xMax = xMax;
-            _yMin = yMin;
-            _yMax = yMax;
+            }
             RaiseViewportChanged();
             InvalidateVisual();
         }
@@ -117,7 +116,7 @@ namespace FunctionClassroom
                     continue;
                 for (int j = 0; j <= 500; j++)
                 {
-                    double x = _xMin + (_xMax - _xMin) * j / 500.0;
+                    double x = _viewport.XMin + _viewport.XSpan * j / 500.0;
                     double y = function.Evaluate(x);
                     if (!double.IsNaN(y) && !double.IsInfinity(y) && Math.Abs(y) < 1e8)
                         values.Add(y);
@@ -144,7 +143,7 @@ namespace FunctionClassroom
                 span = 10.0;
             }
             double padding = span * 0.15;
-            SetViewport(_xMin, _xMax, low - padding, high + padding);
+            SetViewport(_viewport.XMin, _viewport.XMax, low - padding, high + padding);
         }
 
         public BitmapSource RenderBitmap(double scale)
@@ -195,29 +194,34 @@ namespace FunctionClassroom
 
         private void DrawGrid(DrawingContext context, double width, double height)
         {
-            double xStep = NiceStep((_xMax - _xMin) * 90.0 / Math.Max(1.0, width));
-            double yStep = NiceStep((_yMax - _yMin) * 80.0 / Math.Max(1.0, height));
+            double xStep = NiceStep(_viewport.XSpan * 90.0 / Math.Max(1.0, width));
+            double yStep = NiceStep(_viewport.YSpan * 80.0 / Math.Max(1.0, height));
             Pen gridPen = new Pen(GridBrush, 1.0);
             Pen axisPen = new Pen(AxisBrush, 2.2);
             Typeface typeface = new Typeface("Microsoft YaHei UI");
 
-            double firstX = Math.Ceiling(_xMin / xStep) * xStep;
-            for (double x = firstX; x <= _xMax + xStep * 0.1; x += xStep)
+            double firstX = Math.Ceiling(_viewport.XMin / xStep) * xStep;
+            for (double x = firstX; x <= _viewport.XMax + xStep * 0.1; x += xStep)
             {
                 double px = MapX(x, width);
                 context.DrawLine(gridPen, new Point(px, 0.0), new Point(px, height));
                 if (Math.Abs(x) > xStep * 0.1)
-                    DrawText(context, FormatTick(x, xStep), new Point(px + 4.0, Math.Min(height - 22.0, MapY(0.0, height) + 5.0)),
+                    DrawText(context, FormatTick(x, xStep),
+                        new Point(px + 4.0,
+                            Math.Max(4.0, Math.Min(height - 22.0, MapY(0.0, height) + 5.0))),
                         13.0, MutedTextBrush, typeface);
             }
 
-            double firstY = Math.Ceiling(_yMin / yStep) * yStep;
-            for (double y = firstY; y <= _yMax + yStep * 0.1; y += yStep)
+            double firstY = Math.Ceiling(_viewport.YMin / yStep) * yStep;
+            for (double y = firstY; y <= _viewport.YMax + yStep * 0.1; y += yStep)
             {
                 double py = MapY(y, height);
                 context.DrawLine(gridPen, new Point(0.0, py), new Point(width, py));
                 if (Math.Abs(y) > yStep * 0.1)
-                    DrawText(context, FormatTick(y, yStep), new Point(Math.Min(width - 50.0, MapX(0.0, width) + 6.0), py - 18.0),
+                    DrawText(context, FormatTick(y, yStep),
+                        new Point(
+                            Math.Max(4.0, Math.Min(width - 50.0, MapX(0.0, width) + 6.0)),
+                            py - 18.0),
                         13.0, MutedTextBrush, typeface);
             }
 
@@ -239,7 +243,7 @@ namespace FunctionClassroom
                     continue;
 
                 IList<PlotSegment> segments = PlotSampler.Sample(
-                    function.Expression, _xMin, _xMax, sampleWidth, function.GetParameter);
+                    function.Expression, _viewport.XMin, _viewport.XMax, sampleWidth, function.GetParameter);
                 Pen pen = new Pen(new SolidColorBrush(function.Color), 3.4);
                 pen.StartLineCap = PenLineCap.Round;
                 pen.EndLineCap = PenLineCap.Round;
@@ -297,7 +301,7 @@ namespace FunctionClassroom
                     new Pen(new SolidColorBrush(function.Color), 4.0),
                     new Point(28.0, y),
                     new Point(52.0, y));
-                DrawText(context, function.Name + "(x) = " + function.ExpressionText,
+                DrawText(context, function.Name + "(x) = " + MathDisplay.Pretty(function.ExpressionText),
                     new Point(60.0, y - 11.0), 16.0, MainTextBrush, typeface);
             }
         }
@@ -332,7 +336,8 @@ namespace FunctionClassroom
                     FlowDirection.LeftToRight,
                     typeface,
                     14.0,
-                    MainTextBrush);
+                    MainTextBrush,
+                    VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 Rect label = new Rect(x + 11.0, y - formatted.Height - 8.0,
                     formatted.Width + 12.0, formatted.Height + 6.0);
                 if (label.Right > ActualWidth - 8.0)
@@ -379,7 +384,8 @@ namespace FunctionClassroom
                 FlowDirection.LeftToRight,
                 typeface,
                 16.0,
-                MainTextBrush);
+                MainTextBrush,
+                VisualTreeHelper.GetDpi(this).PixelsPerDip);
             Rect background = new Rect(origin.X, origin.Y, formatted.Width + 16.0, formatted.Height + 10.0);
             if (background.Right > ActualWidth - 8.0)
                 background.X = ActualWidth - background.Width - 8.0;
@@ -441,14 +447,7 @@ namespace FunctionClassroom
         {
             if (Math.Abs(dx) < 0.01 && Math.Abs(dy) < 0.01)
                 return;
-            double xPerPixel = (_xMax - _xMin) / Math.Max(1.0, ActualWidth);
-            double yPerPixel = (_yMax - _yMin) / Math.Max(1.0, ActualHeight);
-            double xShift = dx * xPerPixel;
-            double yShift = dy * yPerPixel;
-            _xMin -= xShift;
-            _xMax -= xShift;
-            _yMin += yShift;
-            _yMax += yShift;
+            _viewport.PanByScreen(dx, dy, ActualWidth, ActualHeight);
             RaiseViewportChanged();
             InvalidateVisual();
         }
@@ -458,12 +457,7 @@ namespace FunctionClassroom
             if (factor <= 0.0 || double.IsNaN(factor) || double.IsInfinity(factor))
                 return;
             factor = Math.Max(0.2, Math.Min(5.0, factor));
-            double worldX = UnmapX(anchor.X);
-            double worldY = UnmapY(anchor.Y);
-            _xMin = worldX - (worldX - _xMin) / factor;
-            _xMax = worldX + (_xMax - worldX) / factor;
-            _yMin = worldY - (worldY - _yMin) / factor;
-            _yMax = worldY + (_yMax - worldY) / factor;
+            _viewport.ZoomAt(factor, anchor.X, anchor.Y, ActualWidth, ActualHeight);
             RaiseViewportChanged();
             InvalidateVisual();
         }
@@ -618,12 +612,12 @@ namespace FunctionClassroom
 
         private double MapX(double x, double width)
         {
-            return (x - _xMin) / (_xMax - _xMin) * width;
+            return _viewport.WorldToScreen(x, 0.0, width, 1.0).X;
         }
 
         private double MapY(double y, double height)
         {
-            return height - (y - _yMin) / (_yMax - _yMin) * height;
+            return _viewport.WorldToScreen(0.0, y, 1.0, height).Y;
         }
 
         private double SafeMapX(double x)
@@ -638,12 +632,18 @@ namespace FunctionClassroom
 
         private double UnmapX(double px)
         {
-            return _xMin + px / Math.Max(1.0, ActualWidth) * (_xMax - _xMin);
+            double x;
+            double ignored;
+            _viewport.ScreenToWorld(px, 0.0, ActualWidth, ActualHeight, out x, out ignored);
+            return x;
         }
 
         private double UnmapY(double py)
         {
-            return _yMin + (ActualHeight - py) / Math.Max(1.0, ActualHeight) * (_yMax - _yMin);
+            double ignored;
+            double y;
+            _viewport.ScreenToWorld(0.0, py, ActualWidth, ActualHeight, out ignored, out y);
+            return y;
         }
 
         private static double SafeScreenCoordinate(double value)
@@ -688,7 +688,7 @@ namespace FunctionClassroom
             return "(" + FormatCoordinate(point.X) + ", " + FormatCoordinate(point.Y) + ")";
         }
 
-        private static void DrawText(
+        private void DrawText(
             DrawingContext context,
             string text,
             Point origin,
@@ -702,7 +702,8 @@ namespace FunctionClassroom
                 FlowDirection.LeftToRight,
                 typeface,
                 size,
-                brush);
+                brush,
+                VisualTreeHelper.GetDpi(this).PixelsPerDip);
             context.DrawText(formatted, origin);
         }
 

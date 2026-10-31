@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Windows.Media;
 
 namespace FunctionClassroom
 {
@@ -126,6 +128,38 @@ namespace FunctionClassroom
         private static bool IsFinite(double value)
         {
             return !double.IsNaN(value) && !double.IsInfinity(value);
+        }
+    }
+
+    public sealed class FunctionPlotItem
+    {
+        public FunctionPlotItem()
+        {
+            Parameters = new Dictionary<string, double>(StringComparer.Ordinal);
+        }
+
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string ExpressionText { get; set; }
+        public Color Color { get; set; }
+        public bool IsVisible { get; set; }
+        public FunctionExpression Expression { get; set; }
+        public Dictionary<string, double> Parameters { get; private set; }
+        public string Error { get; set; }
+
+        public double Evaluate(double x)
+        {
+            if (Expression == null)
+                return double.NaN;
+            return Expression.Evaluate(x, GetParameter);
+        }
+
+        public double GetParameter(string name)
+        {
+            double value;
+            if (Parameters.TryGetValue(name, out value))
+                return value;
+            return 1.0;
         }
     }
 }
