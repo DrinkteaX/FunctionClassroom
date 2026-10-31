@@ -95,6 +95,58 @@ internal static class MathCoreTests
                 Compile("x"), Compile("0"), -5.0, 5.0, 1001);
             AssertTrue(result.Points.Count == 1, "Expected one deduplicated intersection.");
         });
+        Run("workspace round trip preserves functions", delegate
+        {
+            string path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                "function-classroom-test-" + Guid.NewGuid().ToString("N") + ".xml");
+            try
+            {
+                SavedWorkspace workspace = new SavedWorkspace();
+                workspace.XMin = -8.0;
+                workspace.XMax = 12.0;
+                workspace.YMin = -3.0;
+                workspace.YMax = 9.0;
+                SavedFunction function = new SavedFunction();
+                function.Id = 7;
+                function.Name = "f1";
+                function.Expression = "a*x^2";
+                function.Color = "#1565C0";
+                function.IsVisible = true;
+                function.ParameterNames = new List<string> { "a" };
+                function.ParameterValues = new List<double> { 1.5 };
+                workspace.Functions.Add(function);
+
+                ProjectStore.Save(path, workspace);
+                SavedWorkspace loaded = ProjectStore.Load(path);
+                AssertNear(-8.0, loaded.XMin);
+                AssertTrue(loaded.Functions.Count == 1, "Expected one saved function.");
+                AssertTrue(loaded.Functions[0].Expression == "a*x^2", "Expression changed.");
+                AssertNear(1.5, loaded.Functions[0].ParameterValues[0]);
+            }
+            finally
+            {
+                if (System.IO.File.Exists(path))
+                    System.IO.File.Delete(path);
+            }
+        });
+        Run("workspace load tolerates corrupt input", delegate
+        {
+            string path = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                "function-classroom-corrupt-" + Guid.NewGuid().ToString("N") + ".xml");
+            try
+            {
+                System.IO.File.WriteAllText(path, "not xml");
+                SavedWorkspace loaded = ProjectStore.Load(path);
+                AssertTrue(loaded.Functions.Count == 0, "Corrupt input should return an empty workspace.");
+            }
+            finally
+            {
+                if (System.IO.File.Exists(path))
+                    System.IO.File.Delete(path);
+            }
+        });
 
         Console.WriteLine();
         Console.WriteLine("Passed: {0}, Failed: {1}", _passed, _failed);
