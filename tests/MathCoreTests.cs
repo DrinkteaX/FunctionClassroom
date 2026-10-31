@@ -32,6 +32,41 @@ internal static class MathCoreTests
         {
             AssertThrows<ExpressionException>(delegate { ExpressionParser.Parse("sin("); });
         });
+        Run("sampler keeps reciprocal branches separate", delegate
+        {
+            FunctionExpression expression = ExpressionParser.Parse("1/x");
+            IList<PlotSegment> segments = PlotSampler.Sample(
+                expression, -10.0, 10.0, 1000, NoParameters);
+            AssertTrue(segments.Count >= 2, "Expected at least two reciprocal branches.");
+            for (int i = 0; i < segments.Count; i++)
+            {
+                PlotSegment segment = segments[i];
+                for (int j = 1; j < segment.Points.Count; j++)
+                {
+                    bool crossesZero = segment.Points[j - 1].X <= 0.0 && segment.Points[j].X >= 0.0;
+                    AssertTrue(!crossesZero, "A reciprocal segment crossed x=0.");
+                }
+            }
+        });
+        Run("sampler respects square root domain", delegate
+        {
+            FunctionExpression expression = ExpressionParser.Parse("sqrt(x)");
+            IList<PlotSegment> segments = PlotSampler.Sample(
+                expression, -4.0, 4.0, 400, NoParameters);
+            AssertTrue(segments.Count > 0, "Expected a square-root segment.");
+            for (int i = 0; i < segments.Count; i++)
+            {
+                for (int j = 0; j < segments[i].Points.Count; j++)
+                    AssertTrue(segments[i].Points[j].X >= -1e-12, "Square root sampled outside its domain.");
+            }
+        });
+        Run("sampler returns finite sine data", delegate
+        {
+            IList<PlotSegment> segments = PlotSampler.Sample(
+                ExpressionParser.Parse("sin(x)"), -6.0, 6.0, 300, NoParameters);
+            AssertTrue(segments.Count > 0, "Expected sine samples.");
+            AssertTrue(segments[0].Points.Count > 100, "Expected dense sine samples.");
+        });
 
         Console.WriteLine();
         Console.WriteLine("Passed: {0}, Failed: {1}", _passed, _failed);
@@ -44,6 +79,11 @@ internal static class MathCoreTests
         {
             throw new ArgumentException("Unexpected parameter: " + name);
         });
+    }
+
+    private static double NoParameters(string name)
+    {
+        throw new ArgumentException("Unexpected parameter: " + name);
     }
 
     private static void Run(string name, Action test)
@@ -85,5 +125,11 @@ internal static class MathCoreTests
             return;
         }
         throw new Exception("Expected " + typeof(TException).Name);
+    }
+
+    private static void AssertTrue(bool condition, string message)
+    {
+        if (!condition)
+            throw new Exception(message);
     }
 }
