@@ -71,7 +71,7 @@ AssertNear(1, Eval("sin(pi/2)", 0));
 - Modify: `tests/MathCoreTests.cs`
 
 **Interfaces:**
-- Produces: `IntersectionFinder.Find(Func<double,double> first, Func<double,double> second, double xMin, double xMax, int sampleCount) -> List<PointData>`
+- Produces: `IntersectionFinder.Find(Func<double,double> first, Func<double,double> second, double xMin, double xMax, int sampleCount) -> IntersectionResult`
 
 - [ ] **Step 1: Add failing tests for line/parabola crossings and `x^2` tangency at zero.**
 - [ ] **Step 2: Add failing tests for no intersection and duplicate suppression.**

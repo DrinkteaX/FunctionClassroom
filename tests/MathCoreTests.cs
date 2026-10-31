@@ -67,6 +67,34 @@ internal static class MathCoreTests
             AssertTrue(segments.Count > 0, "Expected sine samples.");
             AssertTrue(segments[0].Points.Count > 100, "Expected dense sine samples.");
         });
+        Run("intersection finds two quadratic roots", delegate
+        {
+            Func<double, double> parabola = Compile("x^2-4");
+            Func<double, double> zero = Compile("0");
+            IntersectionResult result = IntersectionFinder.Find(parabola, zero, -5.0, 5.0, 1001);
+            AssertTrue(result.Points.Count == 2, "Expected two intersections.");
+            AssertNear(-2.0, result.Points[0].X);
+            AssertNear(2.0, result.Points[1].X);
+        });
+        Run("intersection finds tangent point", delegate
+        {
+            IntersectionResult result = IntersectionFinder.Find(
+                Compile("x^2"), Compile("0"), -5.0, 5.0, 1001);
+            AssertTrue(result.Points.Count == 1, "Expected one tangent intersection.");
+            AssertNear(0.0, result.Points[0].X);
+        });
+        Run("intersection reports no crossing", delegate
+        {
+            IntersectionResult result = IntersectionFinder.Find(
+                Compile("x^2+1"), Compile("0"), -5.0, 5.0, 1001);
+            AssertTrue(result.Points.Count == 0, "Expected no intersections.");
+        });
+        Run("intersection suppresses duplicates", delegate
+        {
+            IntersectionResult result = IntersectionFinder.Find(
+                Compile("x"), Compile("0"), -5.0, 5.0, 1001);
+            AssertTrue(result.Points.Count == 1, "Expected one deduplicated intersection.");
+        });
 
         Console.WriteLine();
         Console.WriteLine("Passed: {0}, Failed: {1}", _passed, _failed);
@@ -84,6 +112,12 @@ internal static class MathCoreTests
     private static double NoParameters(string name)
     {
         throw new ArgumentException("Unexpected parameter: " + name);
+    }
+
+    private static Func<double, double> Compile(string source)
+    {
+        FunctionExpression expression = ExpressionParser.Parse(source);
+        return delegate(double x) { return expression.Evaluate(x, NoParameters); };
     }
 
     private static void Run(string name, Action test)
