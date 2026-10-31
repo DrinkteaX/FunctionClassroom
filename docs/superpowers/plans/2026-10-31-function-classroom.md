@@ -1,5 +1,9 @@
 # 函数课堂 Implementation Plan
 
+**制作：雾雨魔理沙**
+
+简述：使用 Windows 自带 C# 与 WPF 构建离线触控函数绘图应用。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 构建一个只依赖 Windows 10 自带运行库的触控函数绘图应用。

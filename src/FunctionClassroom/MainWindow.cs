@@ -140,6 +140,9 @@ namespace FunctionClassroom
             titlePanel.Children.Add(title);
             _statusText = UiFactory.Text("触控绘图 · Windows 10", 13.0, UiFactory.MutedTextBrush);
             titlePanel.Children.Add(_statusText);
+            TextBlock credit = UiFactory.Text("制作：雾雨魔理沙", 12.0, UiFactory.MutedTextBrush);
+            credit.Margin = new Thickness(0.0, 1.0, 0.0, 0.0);
+            titlePanel.Children.Add(credit);
             layout.Children.Add(titlePanel);
 
             WrapPanel actions = new WrapPanel();

@@ -9,8 +9,10 @@ if (!(Test-Path -LiteralPath $csc)) {
 
 $buildDir = Join-Path $root ".build"
 $distDir = Join-Path $root "dist"
+$releaseDir = Join-Path $root "release"
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
 
 $wpfReferences = @(
     "/reference:$(Join-Path $framework 'WPF\PresentationFramework.dll')",
@@ -78,7 +80,51 @@ Copy-Item -LiteralPath $appExe -Destination (Join-Path $distDir "FunctionClassro
 Copy-Item -LiteralPath (Join-Path $root "app.config") `
     -Destination (Join-Path $distDir "FunctionClassroom.exe.config") -Force
 Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination $distDir -Force
+Copy-Item -LiteralPath (Join-Path $root "INSTALL.md") -Destination $distDir -Force
+
+$portableZip = Join-Path $releaseDir "FunctionClassroom_v0.1.0_portable.zip"
+if (Test-Path -LiteralPath $portableZip) {
+    Remove-Item -LiteralPath $portableZip -Force
+}
+Compress-Archive -Path (Join-Path $distDir "*") -DestinationPath $portableZip -CompressionLevel Optimal
+
+$setupExe = Join-Path $buildDir "FunctionClassroomSetup.exe"
+$setupReferences = $wpfReferences + @(
+    "/reference:$(Join-Path $framework 'System.Windows.Forms.dll')",
+    "/reference:$(Join-Path $framework 'System.Drawing.dll')"
+)
+$setupSources = @(
+    (Join-Path $root "installer\Setup.cs"),
+    (Join-Path $root "installer\AssemblyInfo.cs")
+)
+& $csc /nologo /codepage:65001 /warn:4 /warnaserror+ /target:winexe /platform:x64 `
+    "/out:$setupExe" `
+    "/win32manifest:$(Join-Path $root 'installer\installer.manifest')" `
+    "/resource:$(Join-Path $distDir 'FunctionClassroom.exe'),FunctionClassroom.exe" `
+    "/resource:$(Join-Path $distDir 'FunctionClassroom.exe.config'),FunctionClassroom.exe.config" `
+    "/resource:$(Join-Path $distDir 'README.md'),README.md" `
+    $setupReferences $setupSources
+if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed." }
+
+$smokeDir = Join-Path $buildDir "installer-smoke"
+if (Test-Path -LiteralPath $smokeDir) {
+    [System.IO.Directory]::Delete($smokeDir, $true)
+}
+$smoke = Start-Process -FilePath $setupExe `
+    -ArgumentList @("/verify", "/target:$smokeDir") `
+    -WindowStyle Hidden -Wait -PassThru
+if ($smoke.ExitCode -ne 0) { throw "Installer payload verification failed." }
+if (!(Test-Path -LiteralPath (Join-Path $smokeDir "FunctionClassroom.exe"))) {
+    throw "Installer did not extract the application."
+}
+[System.IO.Directory]::Delete($smokeDir, $true)
+
+$releaseSetup = Join-Path $releaseDir "FunctionClassroom_Setup_v0.1.0.exe"
+Copy-Item -LiteralPath $setupExe -Destination $releaseSetup -Force
+Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination $releaseDir -Force
+Copy-Item -LiteralPath (Join-Path $root "INSTALL.md") -Destination $releaseDir -Force
 
 Write-Host ""
-Write-Host "Build complete: $distDir" -ForegroundColor Green
-Write-Host "Run: $(Join-Path $distDir 'FunctionClassroom.exe')"
+Write-Host "Build complete." -ForegroundColor Green
+Write-Host "Portable: $portableZip"
+Write-Host "Installer: $releaseSetup"

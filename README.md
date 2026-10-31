@@ -1,73 +1,55 @@
 # 函数课堂
 
-面向 Windows 10 希沃大屏的触控函数绘图工具。软件只使用 Windows 自带的
-.NET Framework/WPF，不需要 Electron、WebView2、Python、Node.js 或第三方 DLL。
+**制作：雾雨魔理沙**
 
-目标系统为 Windows 10 64 位，使用系统内置的 .NET Framework 4.8。
+面向 Windows 10 希沃大屏的触控函数绘图工具。界面为大屏触控设计，
+同时支持鼠标和实体键盘。
 
-## 已实现
+## 功能
 
-- 同一坐标系同时绘制最多 6 条显函数。
-- 触控公式键盘，也可使用实体键盘输入。
-- 平移、缩放、复位、自动适配视野和触摸查值。
-- 参数 `a` 至 `k` 自动生成滑块。
-- 指定两条函数求交点，或求函数与 x 轴的交点。
-- 常见高中函数模板与简短性质说明。
-- 课堂演示模式、自动保存、PNG 导出和复制到剪贴板。
+- 最多同时绘制 6 条函数。
+- 触控公式键盘，可输入常见高中函数和参数 `a` 至 `k`。
+- 平移、缩放、触摸查值和自动适配视野。
+- 查看两条函数的交点，或查看函数与 x 轴的交点。
+- 二次、指数、对数、三角函数等快捷模板。
+- 参数滑块、课堂演示、自动保存、PNG 导出和剪贴板复制。
 
-## 支持输入
+## 运行环境
 
-```text
-x^2 - 4
-2x + 1
-sqrt(x + 3)
-abs(x - 2)
-2^x
-sin(2x)
-log(x, 10)
-a*(x-h)^2+k
-```
+- Windows 10 64 位。
+- 使用系统自带的 .NET Framework 4.8 和 WPF。
+- 不需要 Electron、WebView2、Python、Node.js、NuGet 包或管理员权限。
 
-函数名包括 `sin`、`cos`、`tan`、`asin`、`acos`、`atan`、`sqrt`、`abs`、
-`ln`、`log`、`log10`、`exp`。
+## 安装
 
-## 构建
+运行 `FunctionClassroom_Setup_v0.1.0.exe`：
 
-在 Windows PowerShell 中运行：
+1. 点击“开始安装”。
+2. 安装完成后从桌面“函数课堂”启动。
+3. 卸载入口位于开始菜单或 Windows“应用和功能”。
 
-```powershell
-.\build.ps1
-```
-
-构建脚本会先用 Windows 自带 C# 编译器运行数学测试和触控坐标测试，再生成：
+安装位置：
 
 ```text
-dist\FunctionClassroom.exe
-dist\FunctionClassroom.exe.config
-dist\README.md
+%LOCALAPPDATA%\Programs\FunctionClassroom
 ```
 
-`dist` 目录可以整体复制到希沃电脑，直接运行 `FunctionClassroom.exe`。
-不需要联网，不需要管理员权限，也不会安装系统服务。
+绿色版可解压 `FunctionClassroom_v0.1.0_portable.zip` 后直接运行
+`FunctionClassroom.exe`。
 
 ## 快捷键
 
-- `Ctrl+S`：保存当前工作区。
-- `F11`：进入或退出课堂演示。
-- `Esc`：退出演示模式。
-
-## 数据
-
-最近的工作区自动保存在：
-
-```text
-%LOCALAPPDATA%\FunctionClassroom\workspace.xml
-```
-
-如果该文件损坏，软件会忽略损坏内容并回到默认工作区。
+- `Ctrl+S`：保存。
+- `F11`：进入或退出演示。
+- `Esc`：退出演示。
 
 ## 已知边界
 
-- 交点只搜索当前视野，结果是数值近似值。
-- 首版只支持显函数 `y=f(x)`，不支持完整分段函数、隐函数和符号推导。
-- 当前构建已完成 Windows 桌面自动化验证；部署到具体希沃机型前仍需做一次真机触控验收。
+- 交点只搜索当前视野，结果为数值近似值。
+- 首版只支持显函数 `y=f(x)`。
+
+工作区保存在 `%LOCALAPPDATA%\FunctionClassroom\workspace.xml`。
+
+---
+
+制作：**雾雨魔理沙**
