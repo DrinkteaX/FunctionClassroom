@@ -274,6 +274,7 @@ namespace FunctionClassroom.Setup
             ExtractResource("FunctionClassroom.exe", Path.Combine(target, AppFileName));
             ExtractResource("FunctionClassroom.exe.config", Path.Combine(target, "FunctionClassroom.exe.config"));
             ExtractResource("README.md", Path.Combine(target, "README.md"));
+            ExtractResource("LICENSE", Path.Combine(target, "LICENSE"));
 
             if (copyUninstaller)
             {

@@ -50,6 +50,10 @@
 
 工作区保存在 `%LOCALAPPDATA%\FunctionClassroom\workspace.xml`。
 
+## 开源许可证
+
+本项目采用 [MIT License](LICENSE)，可以自由使用、修改和再发布。
+
 ---
 
 制作：**雾雨魔理沙**

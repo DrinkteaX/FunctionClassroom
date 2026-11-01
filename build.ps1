@@ -81,6 +81,7 @@ Copy-Item -LiteralPath (Join-Path $root "app.config") `
     -Destination (Join-Path $distDir "FunctionClassroom.exe.config") -Force
 Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination $distDir -Force
 Copy-Item -LiteralPath (Join-Path $root "INSTALL.md") -Destination $distDir -Force
+Copy-Item -LiteralPath (Join-Path $root "LICENSE") -Destination $distDir -Force
 
 $portableZip = Join-Path $releaseDir "FunctionClassroom_v0.1.0_portable.zip"
 if (Test-Path -LiteralPath $portableZip) {
@@ -103,6 +104,7 @@ $setupSources = @(
     "/resource:$(Join-Path $distDir 'FunctionClassroom.exe'),FunctionClassroom.exe" `
     "/resource:$(Join-Path $distDir 'FunctionClassroom.exe.config'),FunctionClassroom.exe.config" `
     "/resource:$(Join-Path $distDir 'README.md'),README.md" `
+    "/resource:$(Join-Path $distDir 'LICENSE'),LICENSE" `
     $setupReferences $setupSources
 if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed." }
 
@@ -116,6 +118,9 @@ $smoke = Start-Process -FilePath $setupExe `
 if ($smoke.ExitCode -ne 0) { throw "Installer payload verification failed." }
 if (!(Test-Path -LiteralPath (Join-Path $smokeDir "FunctionClassroom.exe"))) {
     throw "Installer did not extract the application."
+}
+if (!(Test-Path -LiteralPath (Join-Path $smokeDir "LICENSE"))) {
+    throw "Installer did not extract the license."
 }
 [System.IO.Directory]::Delete($smokeDir, $true)
 
